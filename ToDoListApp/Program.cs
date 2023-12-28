@@ -24,15 +24,12 @@ class Program
             {
                 case "1":
                     AddTodoItem();
-                    Console.WriteLine("1 Chosen.");
                     break;
                 case "2":
                     MarkTodoItem();
-                    Console.WriteLine("2 Chosen.");
                     break;
                 case "3":
                     running = false;
-                    Console.WriteLine("3 Chosen.");
                     break;
                 default:
                     Console.WriteLine("Invalid option, try again.");
@@ -58,22 +55,65 @@ class Program
 
     static void AddTodoItem()
     {
-        Console.WriteLine("Enter the description of the to-do item:");
-        string description = Console.ReadLine();
-        todoList.Add(new ToDoItem { Description = description });
+        try
+        {
+     
+            Console.WriteLine("Enter the description of the to-do item:");
+            string description = Console.ReadLine();
+            if (string.IsNullOrEmpty(description))
+            {
+                Console.WriteLine("The description cannot be empty. Please enter a valid description.");
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                AddTodoItem();
+                return;
+            }
+            todoList.Add(new ToDoItem { Description = description });
+            Console.WriteLine("To-do item added successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+            Console.WriteLine("Press any key to continue...");
+            Console.ReadKey();
+        }
+        
     }
 
     static void MarkTodoItem()
     {
-        DisplayTodoList();
-        Console.WriteLine("Enter the number of the item to mark as completed:");
-        if (int.TryParse(Console.ReadLine(), out int itemNumber) && itemNumber >= 1 && itemNumber <= todoList.Count)
+        try
         {
-            todoList[itemNumber - 1].IsCompleted = true;
-        }
-        else
+            DisplayTodoList();
+            Console.WriteLine("Enter the number of the item to mark as completed:");
+            string itemNumber = Console.ReadLine();
+            if (string.IsNullOrEmpty(itemNumber))
+            {
+                Console.WriteLine("Item number cannot be empty. Please enter a valid item number.");
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                MarkTodoItem();
+                return;
+            }
+            
+            if (int.TryParse(itemNumber, out int number) && number >= 1 && number <= todoList.Count)
+            {
+                todoList[number - 1].IsCompleted = true;
+            }
+            else
+            {
+                Console.WriteLine("Invalid item number.");
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                MarkTodoItem();
+                
+            }
+        } 
+        catch (Exception ex)
         {
-            Console.WriteLine("Invalid item number.");
+            Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+            Console.WriteLine("Press any key to continue...");
+            Console.ReadKey();
         }
     }
 }
