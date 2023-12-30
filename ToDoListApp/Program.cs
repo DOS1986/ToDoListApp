@@ -1,17 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using ToDoListApp;
+using NLog;
+using System.Diagnostics;
 
 class Program
 {
     static List<ToDoItem> todoList = new List<ToDoItem>();
+    private static Logger logger = LogManager.GetCurrentClassLogger();
+
 
     static void Main(string[] args)
     {
+        logger.Info("Application starting...");
         bool running = true;
 
         while (running)
         {
+            logger.Info("Application running...");
             Console.Clear();
             DisplayTodoList();
             Console.WriteLine("Choose an option:");
@@ -32,9 +38,7 @@ class Program
                     running = false;
                     break;
                 default:
-                    Console.WriteLine("Invalid option, try again.");
-                    Console.WriteLine("Press any key to continue...");
-                    Console.ReadKey();
+                    MessageHandler($"Invalid option, try again.");
                     break;
             }
 
@@ -62,20 +66,19 @@ class Program
             string description = Console.ReadLine();
             if (string.IsNullOrEmpty(description))
             {
-                Console.WriteLine("The description cannot be empty. Please enter a valid description.");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
+                MessageHandler($"The description cannot be empty. Please enter a valid description.");
+                logger.Warn("Attempted to add an empty to-do item.");
                 AddTodoItem();
                 return;
             }
             todoList.Add(new ToDoItem { Description = description });
             Console.WriteLine("To-do item added successfully!");
+            logger.Info($"To-do item added: {description}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"An unexpected error occurred: {ex.Message}");
-            Console.WriteLine("Press any key to continue...");
-            Console.ReadKey();
+            MessageHandler($"An unexpected error occurred: {ex.Message}");
+            logger.Error(ex, "Error occurred in AddTodoItem.");
         }
         
     }
@@ -89,9 +92,8 @@ class Program
             string itemNumber = Console.ReadLine();
             if (string.IsNullOrEmpty(itemNumber))
             {
-                Console.WriteLine("Item number cannot be empty. Please enter a valid item number.");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
+                MessageHandler($"Item number cannot be empty. Please enter a valid item number.");
+                logger.Warn("Attempted to mark an empty to-do item.");
                 MarkTodoItem();
                 return;
             }
@@ -99,21 +101,26 @@ class Program
             if (int.TryParse(itemNumber, out int number) && number >= 1 && number <= todoList.Count)
             {
                 todoList[number - 1].IsCompleted = true;
+                logger.Info($"{todoList[number - 1].Description} is marked as complete.");
             }
             else
             {
-                Console.WriteLine("Invalid item number.");
-                Console.WriteLine("Press any key to continue...");
-                Console.ReadKey();
+                MessageHandler($"Invalid item number.");
+                logger.Warn("Invalid item number.");
                 MarkTodoItem();
-                
             }
         } 
         catch (Exception ex)
         {
-            Console.WriteLine($"An unexpected error occurred: {ex.Message}");
-            Console.WriteLine("Press any key to continue...");
-            Console.ReadKey();
+            MessageHandler($"An unexpected error occurred: {ex.Message}");
+            logger.Error(ex, "Error occurred in AddTodoItem.");
         }
+    }
+
+    static void MessageHandler(string message)
+    {
+        Console.WriteLine($"{message}");
+        Console.WriteLine("Press any key to continue...");
+        Console.ReadKey();
     }
 }
