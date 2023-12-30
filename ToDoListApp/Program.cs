@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using ToDoListApp;
 using NLog;
 using System.Diagnostics;
+using System.Xml;
+using Newtonsoft.Json;
+using Formatting = Newtonsoft.Json.Formatting;
 
 class Program
 {
@@ -13,12 +16,12 @@ class Program
     static void Main(string[] args)
     {
         logger.Info("Application starting...");
+        LoadFromJson();
         bool running = true;
 
         while (running)
         {
             logger.Info("Application running...");
-            Console.Clear();
             DisplayTodoList();
             Console.WriteLine("Choose an option:");
             Console.WriteLine("1. Add To-Do Item");
@@ -35,6 +38,7 @@ class Program
                     MarkTodoItem();
                     break;
                 case "3":
+                    SaveToJson();
                     running = false;
                     break;
                 default:
@@ -42,7 +46,14 @@ class Program
                     break;
             }
 
+            if (running)
+            {
+                Console.WriteLine("Press any key to continue...");
+                Console.ReadKey();
+                Console.Clear();
+            }
         }
+        logger.Info("Application ending...");
 
     }
 
@@ -74,6 +85,7 @@ class Program
             todoList.Add(new ToDoItem { Description = description });
             Console.WriteLine("To-do item added successfully!");
             logger.Info($"To-do item added: {description}");
+            SaveToJson();
         }
         catch (Exception ex)
         {
@@ -101,7 +113,9 @@ class Program
             if (int.TryParse(itemNumber, out int number) && number >= 1 && number <= todoList.Count)
             {
                 todoList[number - 1].IsCompleted = true;
+                Console.WriteLine($"{todoList[number - 1].Description} is marked as complete.");
                 logger.Info($"{todoList[number - 1].Description} is marked as complete.");
+                SaveToJson();
             }
             else
             {
@@ -122,5 +136,70 @@ class Program
         Console.WriteLine($"{message}");
         Console.WriteLine("Press any key to continue...");
         Console.ReadKey();
+        Console.Clear();
+    }
+
+    static void HandleLoadingError(Exception ex, string userMessage)
+    {
+        logger.Error(ex, "Error occurred while loading from JSON.");
+        Console.WriteLine($"{userMessage} Error: {ex.Message}");
+        Console.WriteLine("Starting with an empty to-do list. Consider restoring from a backup if available.");
+        // Initialize todoList to prevent null references elsewhere
+        todoList = new List<ToDoItem>();
+    }
+
+    static void SaveToJson()
+    {
+        try
+        {
+            string json = JsonConvert.SerializeObject(todoList, Formatting.Indented);
+            File.WriteAllText("todolist.json", json);
+            Console.WriteLine("To-do list saved successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while saving: {ex.Message}");
+            logger.Error(ex, "Error occurred while saving to JSON.");
+        }
+    }
+
+    static void LoadFromJson()
+    {
+        try
+        {
+            if (File.Exists("todolist.json"))
+            {
+                string json = File.ReadAllText("todolist.json");
+
+                // Basic validation of JSON structure
+                if (string.IsNullOrWhiteSpace(json) || (json[0] != '{' && json[0] != '['))
+                {
+                    throw new InvalidDataException("JSON file does not have a valid format.");
+                }
+
+                List<ToDoItem> loadedList = JsonConvert.DeserializeObject<List<ToDoItem>>(json);
+                if (loadedList != null)
+                {
+                    todoList = loadedList;
+                    Console.WriteLine("To-do list loaded successfully.");
+                }
+                else
+                {
+                    throw new InvalidDataException("JSON file is corrupted and could not be loaded.");
+                }
+            }
+        }
+        catch (JsonException ex)
+        {
+            HandleLoadingError(ex, "The JSON file is malformed or corrupted.");
+        }
+        catch (InvalidDataException ex)
+        {
+            HandleLoadingError(ex, ex.Message);
+        }
+        catch (Exception ex)
+        {
+            HandleLoadingError(ex, "An unexpected error occurred while loading the to-do list.");
+        }
     }
 }
